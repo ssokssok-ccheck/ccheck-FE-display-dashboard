@@ -293,6 +293,8 @@ export default function App() {
   }, [displayData]);
 
   const tone = view.tone === "danger" ? "danger" : view.tone === "success" ? "success" : "neutral";
+  const totalCarbonText = formatCarbon(displayData.total_carbon_reduction_gco2e);
+  const totalCarbonSize = totalCarbonText.length >= 15 ? " extra-compact" : totalCarbonText.length >= 12 ? " compact" : "";
   return (
     <main className={`display-page ${tone}`}>
       <aside className="display-brand-panel">
@@ -306,7 +308,7 @@ export default function App() {
         <div className="display-carbon-card">
           <span className="metric-icon"><Icon name="leaf" /></span>
           <span>누적 탄소배출 감소량</span>
-          <strong>{formatCarbon(displayData.total_carbon_reduction_gco2e)}</strong>
+          <strong className={`carbon-total-value${totalCarbonSize}`} title={totalCarbonText}>{totalCarbonText}</strong>
         </div>
       </aside>
 
