@@ -233,6 +233,7 @@ function getDisplayLedColor(tone) {
 export default function App() {
   const [displayData, setDisplayData] = useState(initialData);
   const [isConnected, setIsConnected] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(false);
   const lastSpokenEventId = useRef(null);
 
   useEffect(() => {
@@ -248,7 +249,7 @@ export default function App() {
         if (!isMounted) return;
         setDisplayData(payload.data || initialData);
         setIsConnected(true);
-        speakOnce(getSpeechMessage(payload.data), payload.data?.event_id, lastSpokenEventId);
+        if (ttsEnabled) speakOnce(getSpeechMessage(payload.data), payload.data?.event_id, lastSpokenEventId);
       } catch {
         if (!isMounted) return;
         setIsConnected(false);
@@ -262,7 +263,7 @@ export default function App() {
       isMounted = false;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [ttsEnabled]);
 
   const view = useMemo(() => {
     const status = displayData.status || "waiting";
@@ -291,97 +292,52 @@ export default function App() {
     return { status, statusInfo, objectKind, objectInfo, decision, binInfo, item, isDanger, guide, photo, tone, messageTitle, resultText, ledColor };
   }, [displayData]);
 
+  const tone = view.tone === "danger" ? "danger" : view.tone === "success" ? "success" : "neutral";
   return (
-    <main
-      className="display-shell"
-      data-status={view.status}
-      data-decision={view.decision}
-      data-tone={view.tone}
-    >
-      <section className="left-column">
-        <article className="brand-card">
-          <img className="brand-image" src="/CCheck.jpg" alt="쏙쏙이 CCheck" />
-          <div className="feature-strip" aria-label="핵심 기능">
-            <Feature icon="scan" label="AI 인식" />
-            <Feature icon="iot" label="IoT 연동" />
-            <Feature icon="leaf" label="지구 보호" />
+    <main className={`display-page ${tone}`}>
+      <aside className="display-brand-panel">
+        <div className="display-logo-card">
+          <img src="/CCheck.jpg" alt="쏙쏙이 CCheck" />
+          <p>AIoT로 확인하고, 올바른 분리배출로 지구를 지켜요</p>
+          <div className="display-feature-row">
+            <Feature icon="scan" label="AI 인식" /><Feature icon="iot" label="IoT 연동" /><Feature icon="leaf" label="지구 보호" />
           </div>
-        </article>
-
-        <article className="carbon-card">
-          <div className="leaf-mark">
-            <Icon name="leaf" />
-          </div>
-          <div>
-            <span>누적 탄소배출 감소량</span>
-            <strong>{formatCarbon(displayData.total_carbon_reduction_gco2e)}</strong>
-          </div>
-        </article>
-      </section>
-
-      <section className="center-column">
-        <article className="object-card">
-          <div className="status-badge">
-            <span>{view.tone === "success" ? "✓" : view.tone === "danger" ? "!" : "·"}</span>
-            {view.messageTitle}
-          </div>
-          <h1>{view.item}</h1>
-          <div className={`object-visual ${view.objectInfo.shape}`}>
-            <span className="scan-corner top-left" />
-            <span className="scan-corner top-right" />
-            <span className="scan-corner bottom-left" />
-            <span className="scan-corner bottom-right" />
-            <div className="object-plate">
-              {view.photo ? (
-                <img className="object-photo" src={view.photo.src} alt={`${view.photo.label} 사진`} />
-              ) : (
-                <span>{view.objectInfo.icon}</span>
-              )}
-            </div>
-          </div>
-          <div className="object-guide-card">
-            <strong>{view.messageTitle}</strong>
-            <p>{view.guide}</p>
-          </div>
-        </article>
-
-        <article className="result-banner">
-          <p>{view.guide}</p>
-          <div className="result-line">
-            <span className="result-icon">{view.tone === "danger" ? "!" : "✓"}</span>
-            <strong>{view.resultText}</strong>
-          </div>
-        </article>
-      </section>
-
-      <aside className="right-column">
-        <InfoCard icon={view.binInfo.icon} label="배출함" value={view.binInfo.label} danger={view.isDanger} />
-        <InfoCard icon="scale" label="무게" value={formatWeight(displayData.weight_g)} danger={view.isDanger} />
-        <InfoCard
-          icon="co2"
-          label="탄소배출 감소량"
-          value={formatCarbon(displayData.carbon_reduction_gco2e)}
-          danger={view.isDanger}
-        />
-        <InfoCard icon="server" label="LED" value={<LedValue color={view.ledColor} />} danger={view.isDanger} compact />
+        </div>
+        <div className="display-carbon-card">
+          <span className="metric-icon"><Icon name="leaf" /></span>
+          <span>누적 탄소배출 감소량</span>
+          <strong>{formatCarbon(displayData.total_carbon_reduction_gco2e)}</strong>
+        </div>
       </aside>
 
-      <section className="bin-dock" aria-label="수거함 목록">
-        {binList.map((bin) => (
-          <div
-            key={bin.key}
-            className={`bin-chip${view.decision === bin.key ? " active" : ""}`}
-            data-bin={bin.key}
-          >
-            <span>
-              <Icon name={bin.icon} />
-            </span>
-            <strong>{bin.label}</strong>
+      <section className="display-center-panel">
+        <div className="display-stage">
+          <div className="display-status"><span>{tone === "danger" ? "!" : tone === "success" ? "✓" : "·"}</span>{tone === "neutral" ? view.statusInfo.badge : view.messageTitle}</div>
+          <h2>{view.item}</h2>
+          <div className={`display-item-layout ${view.photo ? "" : "no-photo"}`}>
+            {view.photo && <div className="item-photo-frame"><i className="photo-corner photo-top-left"/><i className="photo-corner photo-top-right"/><i className="photo-corner photo-bottom-left"/><i className="photo-corner photo-bottom-right"/><img src={view.photo.src} alt={view.photo.label}/></div>}
+            <div className="display-guide-card"><p>{view.guide}</p></div>
           </div>
-        ))}
+        </div>
+        <div className="display-result-banner">
+          <p>{tone === "danger" ? "안전한 방법으로 별도 배출이 필요합니다." : "분류 결과에 따라 자동 배출을 시작합니다."}</p>
+          <strong><b>{tone === "danger" ? "!" : "✓"}</b>{tone === "danger" ? "분류 실패" : "배출 가능"}</strong>
+        </div>
       </section>
+
+      <aside className="display-side-panel">
+        <Metric icon={view.binInfo.icon} label="배출함" value={view.binInfo.label} />
+        <Metric icon="scale" label="무게" value={formatWeight(displayData.weight_g)} />
+        <Metric icon="co2" label="탄소배출 감소량" value={formatCarbon(displayData.carbon_reduction_gco2e)} />
+        <Metric icon="server" label="LED" value={<LedValue color={view.ledColor} />} />
+        <button className="tts-button" onClick={() => setTtsEnabled(v => !v)}>TTS {ttsEnabled ? "켜짐" : "꺼짐"}</button>
+      </aside>
     </main>
   );
+}
+
+function Metric({ icon, label, value }) {
+  return <article className="metric"><span className="metric-icon"><Icon name={icon}/></span><span className="metric-label">{label}</span><strong>{value}</strong></article>;
 }
 
 function Feature({ icon, label }) {
