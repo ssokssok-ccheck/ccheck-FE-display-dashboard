@@ -114,10 +114,10 @@ const scenarioCopy = {
   milkCarton: {
     itemLabel: "우유팩",
     photoKey: "milkCarton",
-    title: "우유팩 배출 방법을 확인해주세요",
-    guide: "내용물을 비우고 깨끗이 씻어 펼친 뒤 종이함에 배출해주세요.",
-    result: "종이류",
-    tone: "success",
+    title: "현재 상태로는 배출할 수 없습니다",
+    guide: "내용물을 비우고 깨끗이 씻어 펼친 뒤 종이팩 수거함에 배출해주세요.",
+    result: "배출 불가",
+    tone: "danger",
   },
   review: {
     itemLabel: null,
@@ -136,6 +136,7 @@ const statusCopy = {
   hold: { badge: "주의 필요", title: "분류 실패", result: "분류 실패", tone: "danger" },
   retry: { badge: "재시도 필요", title: "재시도", result: "재시도", tone: "danger" },
   fail: { badge: "인식 실패", title: "분류 실패", result: "분류 실패", tone: "danger" },
+  guide_only: { badge: "배출 안내", title: "배출 불가", result: "배출 불가", tone: "danger" },
 };
 
 function formatCarbon(value) {
@@ -233,7 +234,7 @@ function getDisplayLedColor(tone) {
 export default function App() {
   const [displayData, setDisplayData] = useState(initialData);
   const [isConnected, setIsConnected] = useState(false);
-  const [ttsEnabled, setTtsEnabled] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
   const lastSpokenEventId = useRef(null);
 
   useEffect(() => {
