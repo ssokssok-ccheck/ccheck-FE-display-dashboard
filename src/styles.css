@@ -270,16 +270,16 @@ input {
 .object-visual {
   position: relative;
   z-index: 1;
-  width: min(42%, 260px);
-  min-width: 150px;
+  width: min(58%, 420px);
+  min-width: 260px;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
 }
 
 .object-plate {
-  width: 72%;
-  height: 72%;
+  width: 88%;
+  height: 88%;
   display: grid;
   place-items: center;
   border-radius: 28px;
@@ -298,6 +298,14 @@ input {
   line-height: 1;
 }
 
+.object-photo {
+  width: 112%;
+  height: 112%;
+  display: block;
+  object-fit: contain;
+  border-radius: 20px;
+}
+
 .object-visual.can .object-plate {
   border-radius: 50px;
   background: linear-gradient(90deg, #f5f5f5, #9fa6a3 42%, #ffffff 55%, #777f7c);
@@ -307,7 +315,7 @@ input {
   color: rgba(0, 63, 48, 0.42);
 }
 
-.object-visual.cup .object-plate {
+.object-visual.cup .object-plate:not(:has(.object-photo)) {
   clip-path: polygon(18% 12%, 82% 12%, 70% 88%, 30% 88%);
 }
 
@@ -356,16 +364,43 @@ input {
   border-color: var(--red);
 }
 
-.object-guide {
+.object-guide-card {
   position: relative;
   z-index: 1;
   max-width: 88%;
+  margin: 8px 0 0;
+  padding: 14px 18px;
+  border: 1px solid rgba(23, 184, 79, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 14px 28px rgba(0, 70, 52, 0.08);
+  text-align: center;
+}
+
+.display-shell[data-tone="danger"] .object-guide-card {
+  border-color: rgba(231, 53, 38, 0.26);
+  background: rgba(255, 246, 243, 0.86);
+}
+
+.object-guide-card strong {
+  display: block;
+  color: var(--green-dark);
+  font-size: clamp(22px, 2vw, 36px);
+  font-weight: 1000;
+  line-height: 1.15;
+  word-break: keep-all;
+}
+
+.display-shell[data-tone="danger"] .object-guide-card strong {
+  color: var(--red);
+}
+
+.object-guide-card p {
   margin: 8px 0 0;
   color: var(--ink);
   font-size: clamp(16px, 1.2vw, 23px);
   font-weight: 850;
   line-height: 1.35;
-  text-align: center;
   word-break: keep-all;
 }
 
@@ -478,6 +513,47 @@ input {
   line-height: 1;
   font-weight: 1000;
   word-break: keep-all;
+}
+
+.led-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.led-value i {
+  width: clamp(18px, 1.8vw, 28px);
+  height: clamp(18px, 1.8vw, 28px);
+  display: inline-block;
+  border-radius: 50%;
+  background: var(--muted);
+  box-shadow: 0 0 0 7px rgba(81, 113, 106, 0.14);
+}
+
+.led-value[data-led="red"] i {
+  background: var(--red);
+  box-shadow: 0 0 0 7px rgba(231, 53, 38, 0.16);
+}
+
+.led-value[data-led="blue"] i {
+  background: #2f80ed;
+  box-shadow: 0 0 0 7px rgba(47, 128, 237, 0.16);
+}
+
+.led-value[data-led="green"] i {
+  background: var(--green);
+  box-shadow: 0 0 0 7px rgba(23, 184, 79, 0.16);
+}
+
+.led-value[data-led="yellow"] i {
+  background: #f5a623;
+  box-shadow: 0 0 0 7px rgba(245, 166, 35, 0.16);
+}
+
+.led-value[data-led="white"] i {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 0 0 7px rgba(0, 74, 57, 0.08);
 }
 
 .info-card.compact strong {
@@ -594,7 +670,7 @@ input {
     border-radius: 18px;
   }
 
-  .object-guide {
+  .object-guide-card {
     max-width: 100%;
   }
 }

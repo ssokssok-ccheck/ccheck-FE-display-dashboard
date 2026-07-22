@@ -23,9 +23,9 @@ const initialData = {
 const binMap = {
   plastic: { label: "플라스틱함", icon: "recycle" },
   paper: { label: "종이함", icon: "paper" },
-  can: { label: "캔류함", icon: "can" },
-  general: { label: "일반쓰레기", icon: "trash" },
-  hold: { label: "분류 불가", icon: "warning" },
+  can: { label: "캔함", icon: "can" },
+  general: { label: "일반쓰레기함", icon: "trash" },
+  hold: { label: "x", icon: "warning" },
 };
 
 const binList = [
@@ -41,6 +41,92 @@ const objectVisuals = {
   can: { shape: "can", icon: "◉", defaultName: "캔" },
   general: { shape: "trash", icon: "⌧", defaultName: "일반쓰레기" },
   unknown: { shape: "unknown", icon: "?", defaultName: "검사 대기 중" },
+};
+
+const itemPhotos = [
+  { key: "petBottleWater", src: "/item-photos/pet-bottle-water-object.png", label: "물 남은 페트병" },
+  { key: "canLeftover", src: "/item-photos/can-leftover-object.png", label: "물 남은 캔" },
+  { key: "paperCupWet", src: "/item-photos/paper-cup-wet-object.png", label: "젖은 종이컵" },
+  { key: "milkCarton", src: "/item-photos/milk-carton.png", label: "우유팩" },
+  { key: "toothbrush", src: "/item-photos/toothbrush.png", label: "칫솔" },
+  { key: "petBottle", src: "/item-photos/pet-bottle-object.png", label: "페트병" },
+  { key: "can", src: "/item-photos/can-object.png", label: "캔" },
+  { key: "paperCup", src: "/item-photos/paper-cup-object.png", label: "종이컵" },
+];
+
+const scenarioCopy = {
+  normal: {
+    itemLabel: null,
+    photoKey: null,
+    title: "배출 가능합니다",
+    guide: "분류 결과에 따라 자동 배출을 시작합니다.",
+    result: "정상 배출",
+    tone: null,
+  },
+  petBottleWater: {
+    itemLabel: "물 남은 페트병",
+    photoKey: "petBottleWater",
+    title: "현재 상태로는 배출할 수 없습니다",
+    guide: "페트병 안의 내용물을 완전히 비워주세요. 비운 후 다시 검사해주세요.",
+    result: "배출 보류",
+    tone: "danger",
+  },
+  canLeftover: {
+    itemLabel: "물 남은 캔",
+    photoKey: "canLeftover",
+    title: "현재 상태로는 배출할 수 없습니다",
+    guide: "캔 안의 내용물을 완전히 비워주세요. 비운 후 다시 검사해주세요.",
+    result: "배출 보류",
+    tone: "danger",
+  },
+  paperCupWet: {
+    itemLabel: "젖은 종이컵",
+    photoKey: "paperCupWet",
+    title: "현재 상태로는 배출할 수 없습니다",
+    guide: "종이컵 안의 내용물을 비우고 물기를 제거해주세요. 충분히 말린 후 다시 검사해주세요.",
+    result: "배출 보류",
+    tone: "danger",
+  },
+  postProcessed: {
+    itemLabel: null,
+    photoKey: null,
+    title: "후처리가 확인되었습니다",
+    guide: "배출 가능한 상태입니다. 자동 배출을 시작합니다.",
+    result: "후처리 성공",
+    tone: "success",
+  },
+  receipt: {
+    itemLabel: "영수증",
+    photoKey: null,
+    title: "배출 가능합니다",
+    guide: "영수증은 종이류로 재활용하지 않습니다. 일반 쓰레기로 배출합니다.",
+    result: "일반 쓰레기",
+    tone: "success",
+  },
+  toothbrush: {
+    itemLabel: "칫솔",
+    photoKey: "toothbrush",
+    title: "배출 가능합니다",
+    guide: "칫솔은 복합 재질 품목입니다. 일반 쓰레기로 배출합니다.",
+    result: "일반 쓰레기",
+    tone: "success",
+  },
+  milkCarton: {
+    itemLabel: "우유팩",
+    photoKey: "milkCarton",
+    title: "우유팩 배출 방법을 확인해주세요",
+    guide: "내용물을 비우고 깨끗이 씻어 펼친 뒤 종이함에 배출해주세요.",
+    result: "종이류",
+    tone: "success",
+  },
+  review: {
+    itemLabel: null,
+    photoKey: null,
+    title: "검수 확인이 필요합니다",
+    guide: "깨진 유리류 또는 신뢰도가 낮은 품목은 안전을 위해 검수보류로 처리합니다.",
+    result: "검수보류",
+    tone: "danger",
+  },
 };
 
 const statusCopy = {
@@ -75,6 +161,49 @@ function inferObjectKind(data) {
   return "unknown";
 }
 
+function hasAny(text, words) {
+  return words.some((word) => text.includes(word));
+}
+
+function getScenarioKey(data) {
+  const text = `${data.item || ""} ${data.category || ""} ${data.decision || ""} ${data.status || ""} ${data.guide || ""} ${
+    data.tts_message || ""
+  }`.toLowerCase();
+  const isHold = data.status === "hold" || data.status === "retry" || data.decision === "hold";
+
+  if (hasAny(text, ["후처리", "다시 검사", "비운 후 확인", "확인되었습니다"]) && data.status === "success") return "postProcessed";
+  if (hasAny(text, ["영수증", "receipt"])) return "receipt";
+  if (hasAny(text, ["칫솔", "toothbrush"])) return "toothbrush";
+  if (hasAny(text, ["우유팩", "우유 팩", "milk carton"])) return "milkCarton";
+  if (data.status === "fail" || hasAny(text, ["깨진 소주병", "깨진 소주잔", "broken glass"])) return "review";
+  if (hasAny(text, ["젖은 종이컵", "wet paper cup"]) || (isHold && hasAny(text, ["종이컵", "종이 컵", "paper cup"]) && hasAny(text, ["수분", "젖", "물기", "moisture"]))) {
+    return "paperCupWet";
+  }
+  if (
+    hasAny(text, ["물 남은 페트병", "물 찬 페트병", "물찬 페트병", "물 들어있는 페트병"]) ||
+    (isHold && hasAny(text, ["페트병", "pet", "플라스틱병"]) && hasAny(text, ["내용물", "물", "초과", "비워"]))
+  ) {
+    return "petBottleWater";
+  }
+  if (
+    hasAny(text, ["음료가 들어있는 캔", "음료 들어있는 캔", "음료 남아있는 캔", "음료 남은 캔", "물 남은 캔"]) ||
+    (isHold && hasAny(text, ["캔", "can"]) && hasAny(text, ["내용물", "음료", "물", "초과", "비워"]))
+  ) {
+    return "canLeftover";
+  }
+  return "normal";
+}
+
+function getItemPhotoByKey(photoKey, item) {
+  if (photoKey) return itemPhotos.find((photo) => photo.key === photoKey) || null;
+  const text = (item || "").toLowerCase();
+  if (hasAny(text, ["우유팩", "우유 팩", "milk"])) return itemPhotos.find((photo) => photo.key === "milkCarton");
+  if (hasAny(text, ["페트병", "pet", "플라스틱병"])) return itemPhotos.find((photo) => photo.key === "petBottle");
+  if (hasAny(text, ["캔", "can"])) return itemPhotos.find((photo) => photo.key === "can");
+  if (hasAny(text, ["종이컵", "종이 컵", "paper cup"])) return itemPhotos.find((photo) => photo.key === "paperCup");
+  return null;
+}
+
 function speakOnce(message, eventId, lastSpokenRef) {
   if (!message || !eventId || lastSpokenRef.current === eventId) return;
   if (!("speechSynthesis" in window)) return;
@@ -86,6 +215,19 @@ function speakOnce(message, eventId, lastSpokenRef) {
   utterance.pitch = 1;
   window.speechSynthesis.speak(utterance);
   lastSpokenRef.current = eventId;
+}
+
+function getSpeechMessage(data) {
+  if (!data) return null;
+  const scenarioInfo = scenarioCopy[getScenarioKey(data)] || scenarioCopy.normal;
+  if (scenarioInfo.title && scenarioInfo.guide) return `${scenarioInfo.title}. ${scenarioInfo.guide}`;
+  return data.tts_message;
+}
+
+function getDisplayLedColor(tone) {
+  if (tone === "danger") return "red";
+  if (tone === "success") return "blue";
+  return "white";
 }
 
 export default function App() {
@@ -106,7 +248,7 @@ export default function App() {
         if (!isMounted) return;
         setDisplayData(payload.data || initialData);
         setIsConnected(true);
-        speakOnce(payload.data?.tts_message, payload.data?.event_id, lastSpokenEventId);
+        speakOnce(getSpeechMessage(payload.data), payload.data?.event_id, lastSpokenEventId);
       } catch {
         if (!isMounted) return;
         setIsConnected(false);
@@ -129,15 +271,24 @@ export default function App() {
     const objectInfo = objectVisuals[objectKind] || objectVisuals.unknown;
     const decision = normalizeDecision(displayData);
     const binInfo = binMap[decision] || binMap.hold;
-    const item = displayData.item || objectInfo.defaultName;
-    const isDanger = statusInfo.tone === "danger";
+    const scenarioKey = getScenarioKey(displayData);
+    const scenarioInfo = scenarioCopy[scenarioKey] || scenarioCopy.normal;
+    const item = scenarioInfo.itemLabel || displayData.item || objectInfo.defaultName;
+    const tone = scenarioInfo.tone || statusInfo.tone;
+    const isDanger = tone === "danger";
     const guide =
-      displayData.guide ||
-      (status === "success"
-        ? `${binInfo.label}에 배출해주세요.`
-        : "상태를 확인한 뒤 다시 배출해주세요.");
+      scenarioKey === "normal" && displayData.guide
+        ? displayData.guide
+        : scenarioInfo.guide ||
+          (status === "success"
+            ? `${binInfo.label}에 배출해주세요.`
+            : "상태를 확인한 뒤 다시 배출해주세요.");
+    const messageTitle = scenarioInfo.title || statusInfo.title;
+    const resultText = scenarioInfo.result || statusInfo.result;
+    const photo = getItemPhotoByKey(scenarioInfo.photoKey, item);
+    const ledColor = getDisplayLedColor(tone);
 
-    return { status, statusInfo, objectKind, objectInfo, decision, binInfo, item, isDanger, guide };
+    return { status, statusInfo, objectKind, objectInfo, decision, binInfo, item, isDanger, guide, photo, tone, messageTitle, resultText, ledColor };
   }, [displayData]);
 
   return (
@@ -145,7 +296,7 @@ export default function App() {
       className="display-shell"
       data-status={view.status}
       data-decision={view.decision}
-      data-tone={view.statusInfo.tone}
+      data-tone={view.tone}
     >
       <section className="left-column">
         <article className="brand-card">
@@ -171,8 +322,8 @@ export default function App() {
       <section className="center-column">
         <article className="object-card">
           <div className="status-badge">
-            <span>{view.statusInfo.tone === "success" ? "✓" : view.statusInfo.tone === "danger" ? "!" : "·"}</span>
-            {view.statusInfo.badge}
+            <span>{view.tone === "success" ? "✓" : view.tone === "danger" ? "!" : "·"}</span>
+            {view.messageTitle}
           </div>
           <h1>{view.item}</h1>
           <div className={`object-visual ${view.objectInfo.shape}`}>
@@ -181,17 +332,24 @@ export default function App() {
             <span className="scan-corner bottom-left" />
             <span className="scan-corner bottom-right" />
             <div className="object-plate">
-              <span>{view.objectInfo.icon}</span>
+              {view.photo ? (
+                <img className="object-photo" src={view.photo.src} alt={`${view.photo.label} 사진`} />
+              ) : (
+                <span>{view.objectInfo.icon}</span>
+              )}
             </div>
           </div>
-          <p className="object-guide">{view.guide}</p>
+          <div className="object-guide-card">
+            <strong>{view.messageTitle}</strong>
+            <p>{view.guide}</p>
+          </div>
         </article>
 
         <article className="result-banner">
-          <p>{view.status === "success" ? `${view.binInfo.label}에 배출해주세요.` : view.guide}</p>
+          <p>{view.guide}</p>
           <div className="result-line">
-            <span className="result-icon">{view.statusInfo.tone === "success" ? "✓" : "!"}</span>
-            <strong>{view.statusInfo.result}</strong>
+            <span className="result-icon">{view.tone === "danger" ? "!" : "✓"}</span>
+            <strong>{view.resultText}</strong>
           </div>
         </article>
       </section>
@@ -201,11 +359,11 @@ export default function App() {
         <InfoCard icon="scale" label="무게" value={formatWeight(displayData.weight_g)} danger={view.isDanger} />
         <InfoCard
           icon="co2"
-          label="이번 감소량"
+          label="탄소배출 감소량"
           value={formatCarbon(displayData.carbon_reduction_gco2e)}
           danger={view.isDanger}
         />
-        <InfoCard icon="server" label="서버" value={isConnected ? "연결됨" : "연결 안 됨"} danger={!isConnected} compact />
+        <InfoCard icon="server" label="LED" value={<LedValue color={view.ledColor} />} danger={view.isDanger} compact />
       </aside>
 
       <section className="bin-dock" aria-label="수거함 목록">
@@ -248,6 +406,23 @@ function InfoCard({ icon, label, value, danger = false, compact = false }) {
         <strong>{value}</strong>
       </div>
     </article>
+  );
+}
+
+function LedValue({ color }) {
+  const labels = {
+    red: "빨간색",
+    blue: "파란색",
+    white: "흰색",
+    green: "초록색",
+    yellow: "노란색",
+    gray: "회색",
+  };
+  return (
+    <span className="led-value" data-led={color}>
+      <i />
+      {labels[color] || color}
+    </span>
   );
 }
 
